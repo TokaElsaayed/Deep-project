@@ -1,0 +1,4 @@
+split,index,id,file_name,label,valid_image,width,height,mode,mean_brightness,contrast,image_hash,caption_count,duplicate_type,source_split,reason
+train,1731,1731,Pigeon_Guillemot_0081_40339.jpg,57,True,500.0,333.0,RGB,0.66698934228346,0.2331719238101818,c1663e91431d915455bb231e53b13cf215f8871d3d1a1fdc6e9899da66722349,10.0,within_train_exact,,
+,5333,5333,Swainson_Warbler_0049_794880.jpg,177,,,,,,,,,confirmed_perceptual_train_copy,train,confirmed perceptual duplicate; train copy removed
+,5903,5903,Marsh_Wren_0141_188796.jpg,196,,,,,,,,,confirmed_perceptual_train_copy,train,confirmed perceptual duplicate; train copy removed

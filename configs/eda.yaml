@@ -1,0 +1,69 @@
+dataset:
+  train_id: Multimodal-Fatima/CUB_train
+  train_split: train
+  test_id: Multimodal-Fatima/CUB_test
+  test_split: test
+  num_classes: 200
+seed: 42
+validation_fraction: 0.15
+paths:
+  outputs_dir: outputs/eda
+  image_report: outputs/eda/image_report.csv
+  caption_source: outputs/eda/caption_source.csv
+  class_counts: outputs/eda/class_counts.csv
+  duplicate_images: outputs/eda/duplicate_images.csv
+  corrupt_images: outputs/eda/corrupt_images.csv
+  caption_quality: outputs/eda/caption_quality.csv
+  vocabulary: outputs/eda/vocabulary.csv
+  typo_candidates: outputs/eda/typo_candidates.csv
+  class_distribution_plot: outputs/eda/class_distribution.png
+  image_dimensions_plot: outputs/eda/image_dimensions.png
+  image_quality_plot: outputs/eda/image_quality.png
+  caption_statistics_plot: outputs/eda/caption_statistics.png
+  sample_images_plot: outputs/eda/sample_images.png
+  captions: outputs/eda/caption_source.csv
+  splits: outputs/eda/splits.csv
+  duplicate_report: outputs/eda/confirmed_duplicate_removals.csv
+  cleaned_captions: outputs/eda/clean_captions.csv
+  cleaning_summary: outputs/eda/caption_cleaning_summary.csv
+  perceptual_duplicates: outputs/eda/perceptual_duplicate_pairs.csv
+  perceptual_removals: outputs/eda/confirmed_perceptual_removals.csv
+  perceptual_review: outputs/eda/perceptual_duplicate_review.png
+  perceptual_final_duplicates: outputs/eda/perceptual_duplicate_pairs_final.csv
+  perceptual_final_review: outputs/eda/perceptual_duplicate_review_final.png
+  augmentation_examples: outputs/eda/augmentation_examples.png
+  test_class_distribution_plot: outputs/eda/test_class_distribution.png
+perceptual_hash:
+  hash_size: 8
+  image_size: 32
+  max_hamming_distance: 5
+preprocessing:
+  input_size: 224
+  resize_short_side: 256
+  augmentation:
+    light:
+      crop_scale:
+      - 0.85
+      - 1.0
+      rotation_degrees: 5
+      brightness: 0.08
+      contrast: 0.08
+      horizontal_flip_probability: 0.5
+    medium:
+      crop_scale:
+      - 0.7
+      - 1.0
+      rotation_degrees: 10
+      brightness: 0.15
+      contrast: 0.15
+      horizontal_flip_probability: 0.5
+normalization:
+  rgb_mean:
+  - 0.484575231096779
+  - 0.4990690590550937
+  - 0.4326982401975864
+  rgb_std:
+  - 0.2320364540940151
+  - 0.22752646981271832
+  - 0.2660812817755806
+  computed_from: final train split only

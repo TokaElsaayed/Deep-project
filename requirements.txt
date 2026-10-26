@@ -1,0 +1,10 @@
+datasets
+matplotlib
+numpy
+pandas
+Pillow
+pyspellchecker
+scipy
+scikit-learn
+PyYAML
+torch

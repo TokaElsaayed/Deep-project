@@ -1,0 +1,3 @@
+source_split,index,id,file_name,label,reason
+train,5333,5333,Swainson_Warbler_0049_794880.jpg,177,confirmed perceptual duplicate; train copy removed
+train,5903,5903,Marsh_Wren_0141_188796.jpg,196,confirmed perceptual duplicate; train copy removed

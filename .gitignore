@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.venv/
+outputs/eda/caption_source.csv
+outputs/eda/clean_captions.csv
+outputs/eda/image_report.csv
+outputs/eda/sample_images.png

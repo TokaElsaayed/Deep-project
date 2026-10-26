@@ -1,0 +1,7 @@
+pair_type,hamming_distance,left_partition,left_index,left_id,left_file_name,left_label,left_phash,right_partition,right_index,right_id,right_file_name,right_label,right_phash,visual_decision,train_image_removed
+within_train,5,train,2350,2350,Belted_Kingfisher_0043_70492.jpg,78,e3b398cc663399cc,train,2347,2347,Belted_Kingfisher_0035_70644.jpg,78,e2f3998c263399cc,different photos of same species; not a duplicate,
+within_train,0,train,5315,5315,Swainson_Warbler_0022_794868.jpg,177,fd99dd0e0b0361f7,train,5333,5333,Swainson_Warbler_0049_794880.jpg,177,fd99dd0e0b0361f7,confirmed duplicate,5333
+train_test,5,train,5903,5903,Marsh_Wren_0141_188796.jpg,196,901d639c1de326d8,test,5696,5696,Marsh_Wren_0108_188788.jpg,196,913c639c3ce326d8,confirmed duplicate,5903
+train_test,4,train,360,360,Bobolink_0001_9261.jpg,12,a6cc993367cc30e6,test,215,215,Red_Winged_Blackbird_0009_5841.jpg,9,a6cc993363cc3966,different species/photos; pHash false positive,
+train_test,4,train,3072,3072,Sayornis_0058_98798.jpg,102,b389cc6633798ecc,test,294,294,Yellow_Headed_Blackbird_0098_8367.jpg,11,b399cc6633398ccd,different species/photos; pHash false positive,
+train_test,4,train,215,215,Rhinoceros_Auklet_0010_797545.jpg,7,bc3ccfc763e1c1c0,test,2836,2836,Brown_Pelican_0009_94256.jpg,99,bc38cfc7e3e1c0e0,different species/photos; pHash false positive,

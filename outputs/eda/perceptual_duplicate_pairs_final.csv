@@ -1,0 +1,5 @@
+pair_type,hamming_distance,left_partition,left_index,left_id,left_file_name,left_label,left_phash,right_partition,right_index,right_id,right_file_name,right_label,right_phash,visual_decision,train_image_removed
+within_train,5,train,2347,2347,Belted_Kingfisher_0035_70644.jpg,78,e2f3998c263399cc,train,2350,2350,Belted_Kingfisher_0043_70492.jpg,78,e3b398cc663399cc,different photos of same species; perched versus flying,
+train_test,4,train,360,360,Bobolink_0001_9261.jpg,12,a6cc993367cc30e6,test,215,215,Red_Winged_Blackbird_0009_5841.jpg,9,a6cc993363cc3966,different species/photos; false positive,
+train_test,4,train,3072,3072,Sayornis_0058_98798.jpg,102,b389cc6633798ecc,test,294,294,Yellow_Headed_Blackbird_0098_8367.jpg,11,b399cc6633398ccd,different species/photos; false positive,
+train_test,4,train,215,215,Rhinoceros_Auklet_0010_797545.jpg,7,bc3ccfc763e1c1c0,test,2836,2836,Brown_Pelican_0009_94256.jpg,99,bc38cfc7e3e1c0e0,different species/photos; false positive,
