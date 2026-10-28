@@ -4,4 +4,8 @@ __pycache__/
 outputs/eda/caption_source.csv
 outputs/eda/clean_captions.csv
 outputs/eda/image_report.csv
+outputs/transfer_learning/
 outputs/eda/sample_images.png
+# Local transfer-learning backups
+transfer-learning.zip
+transfer-learning-latest.zip
