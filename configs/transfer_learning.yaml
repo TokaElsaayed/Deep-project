@@ -1,0 +1,22 @@
+seed: 42
+dataset:
+  config: configs/eda.yaml
+  splits: outputs/eda/splits.csv
+  num_classes: 200
+training:
+  batch_size: 32
+  workers: 0
+  feature_extraction:
+    epochs: 30
+    head_learning_rate: 0.001
+    weight_decay: 0.0001
+    patience: 7
+  fine_tuning:
+    epochs: 30
+    head_learning_rate: 0.0001
+    backbone_learning_rate: 0.00001
+    weight_decay: 0.0001
+    patience: 7
+  fine_tune_backbone_blocks: 1
+  mixed_precision: true
+outputs_dir: outputs/transfer_learning

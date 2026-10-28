@@ -1,0 +1,4 @@
+model,best_validation_accuracy,test_accuracy,test_loss,macro_f1,results_source
+baseline_cnn_scratch,0.1001,0.1001,4.9442,,outputs/baseline/README.md; test split from outputs/eda/splits.csv
+efficientnet_b3,0.692992213570634,0.7031411805315844,1.624273211921253,0.7032867343604525,outputs\transfer_learning\efficientnet_b3\evaluation_metrics.json
+resnet50,0.64293659621802,0.6629271660338281,1.2534554387356933,0.6622783699595152,outputs\transfer_learning\resnet50\evaluation_metrics.json

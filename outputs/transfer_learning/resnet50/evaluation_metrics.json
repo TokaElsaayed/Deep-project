@@ -1,0 +1,22 @@
+{
+  "model": "resnet50",
+  "checkpoint": "outputs\\transfer_learning\\resnet50\\fine_tuning\\best_checkpoint.pth",
+  "best_validation_accuracy": 0.64293659621802,
+  "best_validation_loss": 1.3138412013732816,
+  "best_epoch": 2,
+  "test_accuracy": 0.6629271660338281,
+  "test_loss": 1.2534554387356933,
+  "macro_precision": 0.6722605847931965,
+  "macro_recall": 0.6653704291491319,
+  "macro_f1": 0.6622783699595152,
+  "weighted_precision": 0.6695563426126143,
+  "weighted_recall": 0.6629271660338281,
+  "weighted_f1": 0.6596509372847446,
+  "test_samples": 5794,
+  "total_training_seconds": 1549.532175673999,
+  "test_inference_seconds_end_to_end": 560.7695006,
+  "test_inference_seconds_per_image": 0.09678451857093545,
+  "test_timing_method": "wall-clock around the full DataLoader iteration, including preprocessing and transfers; CUDA synchronized at end",
+  "input_crop_size": 224,
+  "averaging_methods": "macro and weighted; per-class scores are one-vs-rest"
+}
