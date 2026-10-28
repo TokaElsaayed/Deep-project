@@ -1,0 +1,5 @@
+Model,Stage,Best Epoch,Best Validation Accuracy (%),Test Accuracy (%),Test Loss,Macro Precision (%),Macro Recall (%),Macro F1 (%),Training Time (s),Inference Time/Image (s)
+ResNet-50,Feature Extraction,18,60.85,60.75,1.5381,62.88,61.07,60.8,1116.32,0.00818
+ResNet-50,Fine-Tuning,2,64.29,66.33,1.2528,67.23,66.56,66.24,1549.53,0.00828
+EfficientNet-B3,Feature Extraction,23,69.3,70.37,1.8254,71.23,70.54,70.36,2112.9,0.01309
+EfficientNet-B3,Fine-Tuning,1,68.85,70.25,1.2103,71.08,70.44,70.3,2684.42,0.01304

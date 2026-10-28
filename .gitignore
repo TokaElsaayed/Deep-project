@@ -4,7 +4,13 @@ __pycache__/
 outputs/eda/caption_source.csv
 outputs/eda/clean_captions.csv
 outputs/eda/image_report.csv
-outputs/transfer_learning/
+outputs/transfer_learning/*
+!outputs/transfer_learning/
+!outputs/transfer_learning/*.md
+!outputs/transfer_learning/*.csv
+!outputs/transfer_learning/resnet50/
+!outputs/transfer_learning/efficientnet_b3/
+outputs/transfer_learning/**/*.pth
 outputs/eda/sample_images.png
 # Local transfer-learning backups
 transfer-learning.zip

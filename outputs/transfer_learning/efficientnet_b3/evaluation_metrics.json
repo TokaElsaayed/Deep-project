@@ -1,0 +1,22 @@
+{
+  "model": "efficientnet_b3",
+  "checkpoint": "outputs/transfer_learning/efficientnet_b3/fine_tuning/best_checkpoint.pth",
+  "best_validation_accuracy": 0.6885428253615128,
+  "best_validation_loss": 1.1623629930287236,
+  "best_epoch": 1,
+  "test_accuracy": 0.7024508111839834,
+  "test_loss": 1.210274048990573,
+  "macro_precision": 0.7107834277262646,
+  "macro_recall": 0.7044200321357862,
+  "macro_f1": 0.7030006900122103,
+  "weighted_precision": 0.7088698565926151,
+  "weighted_recall": 0.7024508111839834,
+  "weighted_f1": 0.7011142900456788,
+  "test_samples": 5794,
+  "total_training_seconds": 2684.4204768060035,
+  "test_inference_seconds_end_to_end": 75.54191605300002,
+  "test_inference_seconds_per_image": 0.013037955825509151,
+  "test_timing_method": "wall-clock around the full DataLoader iteration, including preprocessing and transfers; CUDA synchronized at end",
+  "input_crop_size": 300,
+  "averaging_methods": "macro and weighted; per-class scores are one-vs-rest"
+}
