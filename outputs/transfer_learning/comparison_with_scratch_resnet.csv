@@ -1,0 +1,4 @@
+model,training_approach,best_validation_accuracy,test_accuracy,test_accuracy_with_tta,test_loss,macro_f1,test_samples,results_source
+scratch_resnet,trained_from_scratch,0.5339265850945495,0.5604,0.5656,,,5794,main:outputs/baseline/README.md and outputs/baseline/history.csv
+resnet50,fine_tuned_from_imagenet,0.64293659621802,0.6629271660338281,,1.2534554387356933,0.6622783699595152,5794,outputs/transfer_learning/resnet50/evaluation_metrics.json
+efficientnet_b3,imagenet_feature_extraction,0.692992213570634,0.7031411805315844,,1.624273211921253,0.7032867343604525,5794,outputs/transfer_learning/efficientnet_b3/evaluation_metrics.json
