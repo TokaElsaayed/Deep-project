@@ -1,53 +1,68 @@
-# Baseline CNN — Person 1
+# Person 1 — Scratch-Trained CNN Baseline
 
 ## Objective
-Build a CNN from scratch to classify 200 bird species.
+Train a convolutional neural network from random initialization to classify 200 bird species. This experiment is the improved scratch-trained baseline; it does not use pretrained weights.
 
 ## Dataset
 - Training images: 5,092
 - Validation images: 899
 - Test images: 5,794
 - Classes: 200
-- Input: RGB images, 224 x 224 pixels
-- Training: light data augmentation
-- Validation/test: deterministic preprocessing
+- Input resolution: 128 × 128 RGB
 - Random seed: 42
 
 ## Architecture
-1. Conv2D 3 -> 32, 3x3 kernel, ReLU, max pooling
-2. Conv2D 32 -> 64, 3x3 kernel, ReLU, max pooling
-3. Conv2D 64 -> 128, 3x3 kernel, ReLU, max pooling
-4. Adaptive average pooling to 1x1
-5. Linear classifier 128 -> 200
+- Convolutional stem with 64 output channels
+- Four residual stages with widths 64, 128, 256, and 512
+- Two residual blocks per stage
+- Adaptive average pooling
+- Dropout: 0.3
+- Linear classifier: 512 → 200 classes
+- Weights initialized from scratch
 
-Trainable parameters: 119,048.
-Weights initialized from scratch; no pretrained model used.
+## Training Configuration
+- Epochs: 100
+- Optimizer: AdamW
+- Maximum learning rate: 0.002
+- Weight decay: 0.03
+- Learning-rate scheduler: OneCycleLR
+- Loss: Cross-entropy with label smoothing (0.1)
+- Augmentation: RandomResizedCrop, horizontal flip, ColorJitter, RandomErasing, and CutMix
+- Mixed precision when CUDA is available
+- Best checkpoint selected using validation accuracy
 
-## Training configuration
-- Optimizer: Adam
-- Learning rate: 0.001
-- Loss: Cross-entropy
-- Batch size: 32
-- Total epochs recorded: 30
-- Model selection: highest validation accuracy
-- Seed: 42
+## Results
+- Best validation accuracy: 53.39% (epoch 91)
+- Standard test accuracy: 56.04%
+- Test accuracy with horizontal-flip test-time augmentation (TTA): 56.56%
 
-## Recorded results
-- Best validation accuracy: 10.01%
-- Test accuracy: 10.01%
-- Test loss: 4.9442
-- Test images evaluated: 5,794
-
-## Interpretation
-The model learned training patterns, but performance remains limited
-for fine-grained classification across 200 bird species. This baseline
-provides a reference point for comparison with improved models.
+TTA averages predictions from the original and horizontally flipped versions of each test image. It is reported separately from standard test accuracy.
 
 ## Artifacts
-- Model: src/models/baseline_cnn.py
-- Training script: src/training/train_baseline.py
-- Training curves: outputs/baseline/training_curves.png
+- `best.pth`: best model checkpoint
+- `history.csv`: training and validation metrics by epoch
+- `loss_curves.png`: loss plot
+- `accuracy_curves.png`: accuracy plot
+- `training_curves.png`: previously recorded training curves
 
-Note: The graph was recreated from metrics printed in the original
-notebook. Trained checkpoint weights are not included unless recovered
-separately from the original runtime or another saved location.
+## Notes
+The original basic CNN baseline and its documentation are preserved separately. The results in this README describe Experiment 9.
+
+The test set should be used for final evaluation, not for selecting hyperparameters.
+
+
+## Longer-training experiment
+
+To test whether additional training improves the scratch CNN, run up to
+100 epochs and save the experiment separately from this recorded baseline:
+
+```powershell
+python baseline_cnn_complete.py --epochs 100 --output-dir outputs/baseline_extended
+```
+
+The script saves the checkpoint with the highest validation accuracy and
+reports test accuracy once at the end. Compare the new validation and test
+results with the baseline above; do not replace the baseline record. More
+epochs may not improve accuracy, so use the validation-selected checkpoint
+and report the measured results.
+
