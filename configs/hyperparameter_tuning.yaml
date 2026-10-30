@@ -1,0 +1,36 @@
+# Hyperparameter tuning for the scratch ResNet (Experiment 9 architecture).
+# Grid, random and Optuna search all use the same search box, the same fixed
+# settings, the same seed and the same per-trial epoch budget, so their results
+# can be compared directly. Only the validation split is used for scoring.
+seed: 42
+output_dir: outputs/hyperparameter_tuning
+
+budget:
+  # Short proxy runs: OneCycleLR is compressed into this many epochs per trial.
+  epochs_per_trial: 10
+  # null = same number of trials as the grid, which keeps the comparison fair.
+  random_trials: null
+  optuna_trials: null
+  # Optuna's median pruner may stop a trial after this many epochs.
+  optuna_pruner_warmup_epochs: 3
+
+# Each tuned hyperparameter lists its grid values and the continuous range that
+# random search and Optuna sample from. The range spans the grid's extremes.
+search_space:
+  max_lr:
+    grid: [0.001, 0.002, 0.004]
+    low: 0.001
+    high: 0.004
+    log: true
+  weight_decay:
+    grid: [0.01, 0.03, 0.1]
+    low: 0.01
+    high: 0.1
+    log: true
+
+# Kept at the Experiment 9 values during tuning.
+fixed:
+  dropout: 0.3
+  label_smoothing: 0.1
+  cutmix_probability: 0.5
+  batch_size: 64
