@@ -50,20 +50,27 @@ python src/training/tune_scratch_resnet.py --method compare
 | `search_space_coverage.png` | The settings each method tried and their scores (grid points vs. random/TPE samples) |
 | `best_hyperparameters.json` | The best settings across all methods, chosen on validation accuracy only |
 
-## Final model
+## Final model (full 100-epoch training)
 
-Retrain with the selected values for the full 100-epoch schedule, then evaluate on the test set once:
+A 10-epoch score only ranks settings. To get accuracies that can be compared with the baseline, `src/training/final_scratch_resnet.py` retrains these candidates for the full 100 epochs:
+
+- the best setting from each tuning method
+- the Experiment 9 setting (`max_lr` 0.002, `weight_decay` 0.03), retrained on the same hardware
+
+Every candidate uses the same seed, data and recipe, so only `max_lr` and `weight_decay` differ. The model with the highest validation accuracy is selected. Every model is then evaluated on the test set for reporting only, never for selection.
 
 ```bash
-python src/training/train_scratch_resnet.py --mode train --epochs 100 \
-    --max-lr <best max_lr> --weight-decay <best weight_decay> \
-    --output-dir outputs/hyperparameter_tuning/final_model
-python src/training/train_scratch_resnet.py --mode evaluate \
-    --checkpoint outputs/hyperparameter_tuning/final_model/best.pth \
-    --output-dir outputs/hyperparameter_tuning/final_model
+python src/training/final_scratch_resnet.py --dry-run   # list the candidates
+python src/training/final_scratch_resnet.py             # train + evaluate each (about 1 h per model on a T4)
 ```
 
-Compare the result with the Experiment 9 baseline (53.39% validation, 56.04% test; `outputs/baseline/README.md`).
+On Kaggle, use `notebooks/kaggle_final_training.ipynb`. Attach the tuning notebook's output as input (**Add Input → Your Work**), then **Save & Run All**. Results are written to `outputs/hyperparameter_tuning/final/` (on Kaggle, `/kaggle/working/hyperparameter_tuning/final/`):
+
+- one folder per candidate, each with its checkpoint, `history.csv`, curves and `evaluation_results.json`
+- `final_comparison.csv` and `final_comparison.md`
+- `final_validation_curves.png`
+
+Finished candidates are skipped if the command is run again. For reference, the recorded Experiment 9 run reached 53.39% validation and 56.04% test accuracy (`outputs/baseline/README.md`).
 
 ## Tests
 
