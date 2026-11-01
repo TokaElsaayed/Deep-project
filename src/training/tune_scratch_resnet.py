@@ -1,4 +1,5 @@
-"""Grid search, random search and Optuna tuning for the scratch ResNet.
+"""Grid search, random search and Optuna tuning for the scratch ResNet, followed
+by full-length retraining of the best settings.
 
 Run from the repository root:
     python src/training/tune_scratch_resnet.py --method grid --dry-run
@@ -6,14 +7,20 @@ Run from the repository root:
     python src/training/tune_scratch_resnet.py --method random
     python src/training/tune_scratch_resnet.py --method optuna
     python src/training/tune_scratch_resnet.py --method compare
+    python src/training/tune_scratch_resnet.py --method final
 
 --method all runs grid, random and optuna in turn and then compares them.
 
-Every trial trains a fresh ScratchResNet for a short, fixed number of epochs and
-is scored by its best validation accuracy. The test split is never loaded.
-Each finished trial is appended to outputs/hyperparameter_tuning/<method>_trials.csv
-straight away, so an interrupted run (e.g. a Colab disconnect) resumes where it
-stopped when the same command is run again.
+Step 1 (grid/random/optuna): every trial trains a fresh ScratchResNet for a short,
+fixed number of epochs and is scored by its best validation accuracy. The test
+split is never loaded. Each finished trial is appended to
+outputs/hyperparameter_tuning/<method>_trials.csv straight away, so an
+interrupted run resumes where it stopped when the same command is run again.
+
+Step 2 (final): the best setting of each method, plus the Experiment 9 setting
+("baseline"), is retrained for the full schedule with the same seed and recipe.
+The winner is chosen on validation accuracy; each model's best checkpoint is then
+evaluated on the test split for reporting. Finished models are skipped on re-runs.
 """
 from __future__ import annotations
 
@@ -45,13 +52,16 @@ from training.train_scratch_resnet import (  # noqa: E402
     build_train_and_validation_loaders,
     cutmix,
     evaluate,
+    evaluate_test,
     get_device,
     seed_everything,
+    train as train_full_schedule,
 )
 
 DEFAULT_CONFIG = PROJECT_ROOT / "configs" / "hyperparameter_tuning.yaml"
 SEARCH_METHODS = ("grid", "random", "optuna")
 METHOD_LABELS = {"grid": "Grid search", "random": "Random search", "optuna": "Optuna (TPE + pruning)"}
+CANDIDATE_LABELS = {"baseline": "Baseline (Experiment 9 settings)", **METHOD_LABELS}
 
 
 def load_config(config_path: Path) -> dict[str, Any]:
@@ -435,18 +445,218 @@ def write_comparison_markdown(
     (output_dir / "comparison.md").write_text(text, encoding="utf-8")
 
 
+def select_final_candidates(
+    config: dict[str, Any], tuning_dir: Path, include_baseline: bool = True
+) -> list[dict[str, Any]]:
+    """The best trial of each tuning method, plus the baseline, without duplicate settings."""
+    param_names = list(config["search_space"])
+    candidates: list[dict[str, Any]] = []
+    if include_baseline:
+        baseline = config["final"]["baseline"]
+        candidates.append({
+            "name": "baseline",
+            **{name: float(baseline[name]) for name in param_names},
+            "short_run_val_acc": None,
+        })
+    for method in SEARCH_METHODS:
+        path = tuning_dir / f"{method}_trials.csv"
+        if not path.exists():
+            continue
+        trials = pd.read_csv(path)
+        best = trials.loc[trials["best_val_acc"].idxmax()]
+        candidates.append({
+            "name": method,
+            **{name: float(best[name]) for name in param_names},
+            "short_run_val_acc": float(best["best_val_acc"]),
+        })
+
+    unique: list[dict[str, Any]] = []
+    for candidate in candidates:
+        duplicate = next(
+            (kept for kept in unique
+             if all(abs(kept[name] - candidate[name]) < 1e-12 for name in param_names)),
+            None,
+        )
+        if duplicate is None:
+            unique.append(candidate)
+        else:
+            print(f"{candidate['name']} has the same settings as {duplicate['name']}; training it once.")
+    if not any(candidate["name"] != "baseline" for candidate in unique):
+        raise FileNotFoundError(f"No *_trials.csv files in {tuning_dir}; run a search first.")
+    return unique
+
+
+def train_final_candidate(candidate: dict[str, Any], context: dict[str, Any]) -> None:
+    """Full-schedule training with train_scratch_resnet.py, then test-set evaluation."""
+    run_dir = context["output_dir"] / candidate["name"]
+    if (run_dir / "evaluation_results.json").exists():
+        print(f"[{candidate['name']}] already finished; skipping.")
+        return
+    print(
+        f"\n[{candidate['name']}] training {context['epochs']} epochs with "
+        f"max_lr={candidate['max_lr']:.4g}, weight_decay={candidate['weight_decay']:.4g}"
+    )
+    fixed = context["fixed"]
+    start = time.perf_counter()
+    train_full_schedule(
+        argparse.Namespace(
+            split_csv=context["split_csv"],
+            output_dir=run_dir,
+            epochs=context["epochs"],
+            batch_size=int(fixed["batch_size"]),
+            max_lr=candidate["max_lr"],
+            weight_decay=candidate["weight_decay"],
+            label_smoothing=float(fixed["label_smoothing"]),
+            cutmix_probability=float(fixed["cutmix_probability"]),
+            seed=context["seed"],
+        ),
+        context["device"],
+    )
+    seconds = time.perf_counter() - start
+    record_duration(context, seconds)
+    (run_dir / "training_minutes.txt").write_text(f"{seconds / 60:.2f}\n")
+    evaluate_test(
+        argparse.Namespace(
+            split_csv=context["split_csv"],
+            checkpoint=run_dir / "best.pth",
+            output_dir=run_dir,
+            batch_size=int(fixed["batch_size"]),
+        ),
+        context["device"],
+    )
+
+
+def summarize_final(candidates: list[dict[str, Any]], output_dir: Path) -> pd.DataFrame:
+    rows = []
+    for candidate in candidates:
+        run_dir = output_dir / candidate["name"]
+        results_path = run_dir / "evaluation_results.json"
+        if not results_path.exists():
+            continue
+        results = json.loads(results_path.read_text(encoding="utf-8"))
+        history = pd.read_csv(run_dir / "history.csv")
+        minutes_path = run_dir / "training_minutes.txt"
+        rows.append({
+            "candidate": candidate["name"],
+            "max_lr": candidate["max_lr"],
+            "weight_decay": candidate["weight_decay"],
+            "short_run_val_acc": candidate["short_run_val_acc"],
+            "epochs": len(history),
+            "best_val_acc": float(history["val_acc"].max()),
+            "best_epoch": int(history.loc[history["val_acc"].idxmax(), "epoch"]),
+            "test_acc": results["standard_test_accuracy"],
+            "test_acc_tta": results["horizontal_flip_tta_test_accuracy"],
+            "training_minutes": float(minutes_path.read_text()) if minutes_path.exists() else None,
+        })
+    summary = pd.DataFrame(rows)
+    if summary.empty:
+        return summary
+    summary["selected"] = summary["best_val_acc"] == summary["best_val_acc"].max()
+    summary.to_csv(output_dir / "final_comparison.csv", index=False)
+    write_final_markdown(summary, output_dir)
+    plot_final_curves(summary, output_dir)
+
+    winner = summary.loc[summary["selected"]].iloc[0]
+    print(summary.to_string(index=False))
+    print(
+        f"\nSelected on validation accuracy: {winner['candidate']} "
+        f"(val {winner['best_val_acc'] * 100:.2f}%, test {winner['test_acc'] * 100:.2f}%)"
+    )
+    return summary
+
+
+def write_final_markdown(summary: pd.DataFrame, output_dir: Path) -> None:
+    def percent(value) -> str:
+        return "—" if value is None or pd.isna(value) else f"{value * 100:.2f}%"
+
+    lines = [
+        "| Settings from | max_lr | weight_decay | Short-run val acc | Best val acc | Best epoch | Test acc "
+        "| Test acc (flip TTA) | Training time (min) |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for row in summary.to_dict("records"):
+        name = CANDIDATE_LABELS[row["candidate"]] + (" **(selected)**" if row["selected"] else "")
+        minutes = row["training_minutes"]
+        minutes = "—" if minutes is None or pd.isna(minutes) else f"{minutes:.0f}"
+        lines.append(
+            f"| {name} | {row['max_lr']:.4g} | {row['weight_decay']:.4g} | {percent(row['short_run_val_acc'])} | "
+            f"{percent(row['best_val_acc'])} | {row['best_epoch']} | {percent(row['test_acc'])} | "
+            f"{percent(row['test_acc_tta'])} | {minutes} |"
+        )
+    text = (
+        "# Final training: tuned settings vs. baseline (scratch ResNet)\n\n"
+        f"Every model was trained for {int(summary['epochs'].max())} epochs with the same seed, data and recipe; "
+        "only max_lr and weight_decay differ. The selected model has the highest validation accuracy. The test "
+        "split was used only to report results, not to choose between models.\n\n"
+        + "\n".join(lines)
+        + "\n\nThe recorded Experiment 9 run reached 53.39% validation and 56.04% test accuracy "
+        "(`outputs/baseline/README.md`). The baseline row above retrains those settings on the same hardware as "
+        "the tuned runs.\n\nPlot: `final_validation_curves.png`.\n"
+    )
+    (output_dir / "final_comparison.md").write_text(text, encoding="utf-8")
+
+
+def plot_final_curves(summary: pd.DataFrame, output_dir: Path) -> None:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    for name in summary["candidate"]:
+        history = pd.read_csv(output_dir / name / "history.csv")
+        ax.plot(history["epoch"], history["val_acc"] * 100, label=CANDIDATE_LABELS[name])
+    ax.set(xlabel="Epoch", ylabel="Validation accuracy (%)", title="Full training: tuned settings vs. baseline")
+    ax.grid(alpha=0.3)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(output_dir / "final_validation_curves.png", dpi=160)
+    plt.close(fig)
+
+
+def run_final(config: dict[str, Any], args: argparse.Namespace, tuning_dir: Path) -> None:
+    candidates = select_final_candidates(config, tuning_dir, include_baseline=not args.no_baseline)
+    for candidate in candidates:
+        short = candidate["short_run_val_acc"]
+        print(
+            f"{candidate['name']:>8}: max_lr={candidate['max_lr']:.4g}, weight_decay={candidate['weight_decay']:.4g}"
+            + ("" if short is None else f" (short-run val acc {short * 100:.2f}%)")
+        )
+    if args.dry_run:
+        return
+    output_dir = tuning_dir / "final"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    context = {
+        "fixed": config["fixed"],
+        "split_csv": args.split_csv,
+        "device": get_device(),
+        "epochs": args.epochs or int(config["final"]["epochs"]),
+        "seed": int(config["seed"]),
+        "output_dir": output_dir,
+        "deadline": None if args.max_hours is None else time.monotonic() + args.max_hours * 3600,
+    }
+    for candidate in candidates:
+        if out_of_time(context):
+            break
+        train_final_candidate(candidate, context)
+    summarize_final(candidates, output_dir)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--method", choices=(*SEARCH_METHODS, "all", "compare"), required=True)
+    parser.add_argument("--method", choices=(*SEARCH_METHODS, "all", "compare", "final"), required=True)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--split-csv", type=Path, default=DEFAULT_SPLITS)
     parser.add_argument("--output-dir", type=Path, default=None, help="Overrides output_dir in the config.")
-    parser.add_argument("--epochs", type=int, default=None, help="Overrides budget.epochs_per_trial.")
+    parser.add_argument(
+        "--epochs", type=int, default=None,
+        help="Overrides budget.epochs_per_trial (final.epochs with --method final).",
+    )
     parser.add_argument("--trials", type=int, default=None, help="Trial count for random/optuna.")
     parser.add_argument(
         "--max-hours", type=float, default=None,
         help="Stop starting new trials so the run ends within this many hours (e.g. Kaggle's 12-hour limit).",
     )
+    parser.add_argument("--no-baseline", action="store_true", help="--method final: skip the Experiment 9 settings.")
     parser.add_argument("--dry-run", action="store_true", help="List the trial settings without training.")
     args = parser.parse_args()
     if args.epochs is not None and args.epochs <= 0:
@@ -465,6 +675,9 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     if args.method == "compare":
         compare_methods(config, output_dir)
+        return
+    if args.method == "final":
+        run_final(config, args, output_dir)
         return
 
     seed = int(config["seed"])

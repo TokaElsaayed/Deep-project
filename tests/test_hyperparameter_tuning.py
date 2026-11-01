@@ -1,3 +1,4 @@
+import json
 import tempfile
 import time
 import unittest
@@ -15,8 +16,16 @@ from src.training.tune_scratch_resnet import (
     out_of_time,
     random_configurations,
     run_trial,
+    select_final_candidates,
+    summarize_final,
     trial_budget,
 )
+
+
+def write_trials(folder: Path, method: str, rows: list[tuple[float, float, float]]) -> None:
+    pd.DataFrame(
+        [{"trial": i, "max_lr": lr, "weight_decay": wd, "best_val_acc": acc} for i, (lr, wd, acc) in enumerate(rows)]
+    ).to_csv(folder / f"{method}_trials.csv", index=False)
 
 
 class HyperparameterTuningTests(unittest.TestCase):
@@ -93,6 +102,56 @@ class HyperparameterTuningTests(unittest.TestCase):
             self.assertEqual(summary.loc["random", "trials_to_best"], 3)
             for name in ("comparison.csv", "comparison.md", "best_hyperparameters.json",
                          "best_score_comparison.png", "search_space_coverage.png"):
+                self.assertTrue((output_dir / name).exists(), name)
+
+    def test_final_candidates_are_each_methods_best_plus_baseline(self):
+        baseline = self.config["final"]["baseline"]
+        with tempfile.TemporaryDirectory() as folder:
+            folder = Path(folder)
+            write_trials(folder, "grid", [(0.001, 0.03, 0.0857), (0.004, 0.1, 0.05)])
+            write_trials(folder, "random", [(0.0012, 0.028, 0.0823)])
+            candidates = {c["name"]: c for c in select_final_candidates(self.config, folder)}
+            self.assertEqual(list(candidates), ["baseline", "grid", "random"])
+            self.assertEqual(candidates["grid"]["max_lr"], 0.001)
+            self.assertAlmostEqual(candidates["grid"]["short_run_val_acc"], 0.0857)
+            self.assertEqual(candidates["baseline"]["max_lr"], baseline["max_lr"])
+            without_baseline = select_final_candidates(self.config, folder, include_baseline=False)
+            self.assertEqual([c["name"] for c in without_baseline], ["grid", "random"])
+
+    def test_final_trains_identical_settings_once(self):
+        baseline = self.config["final"]["baseline"]
+        with tempfile.TemporaryDirectory() as folder:
+            folder = Path(folder)
+            write_trials(folder, "grid", [(baseline["max_lr"], baseline["weight_decay"], 0.09)])
+            write_trials(folder, "random", [(0.0012, 0.028, 0.08)])
+            names = [c["name"] for c in select_final_candidates(self.config, folder)]
+            self.assertEqual(names, ["baseline", "random"])
+
+    def test_final_needs_tuning_results(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaises(FileNotFoundError):
+                select_final_candidates(self.config, Path(folder))
+
+    def test_final_summary_selects_on_validation_not_test(self):
+        candidates = [
+            {"name": "baseline", "max_lr": 0.002, "weight_decay": 0.03, "short_run_val_acc": None},
+            {"name": "optuna", "max_lr": 0.0017, "weight_decay": 0.089, "short_run_val_acc": 0.089},
+        ]
+        scores = {"baseline": (0.53, 0.58), "optuna": (0.55, 0.56)}
+        with tempfile.TemporaryDirectory() as folder:
+            output_dir = Path(folder)
+            for name, (val, test) in scores.items():
+                run_dir = output_dir / name
+                run_dir.mkdir()
+                pd.DataFrame({"epoch": [1, 2], "val_acc": [0.1, val]}).to_csv(run_dir / "history.csv", index=False)
+                (run_dir / "evaluation_results.json").write_text(json.dumps({
+                    "standard_test_accuracy": test, "horizontal_flip_tta_test_accuracy": test + 0.005,
+                }))
+            summary = summarize_final(candidates, output_dir).set_index("candidate")
+            self.assertTrue(summary.loc["optuna", "selected"])
+            self.assertFalse(summary.loc["baseline", "selected"])
+            self.assertEqual(summary.loc["optuna", "best_epoch"], 2)
+            for name in ("final_comparison.csv", "final_comparison.md", "final_validation_curves.png"):
                 self.assertTrue((output_dir / name).exists(), name)
 
 

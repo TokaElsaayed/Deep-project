@@ -34,3 +34,11 @@ fixed:
   label_smoothing: 0.1
   cutmix_probability: 0.5
   batch_size: 64
+
+# --method final: retrain the best setting of each method, plus the baseline
+# setting below, for the full schedule and evaluate each on the test split.
+final:
+  epochs: 100
+  baseline:  # Experiment 9 (outputs/baseline/README.md)
+    max_lr: 0.002
+    weight_decay: 0.03

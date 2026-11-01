@@ -52,7 +52,7 @@ python src/training/tune_scratch_resnet.py --method compare
 
 ## Final model (full 100-epoch training)
 
-A 10-epoch score only ranks settings. To get accuracies that can be compared with the baseline, `src/training/final_scratch_resnet.py` retrains these candidates for the full 100 epochs:
+A 10-epoch score only ranks settings. To get accuracies that can be compared with the baseline, `python src/training/tune_scratch_resnet.py --method final` retrains these candidates for the full 100 epochs:
 
 - the best setting from each tuning method
 - the Experiment 9 setting (`max_lr` 0.002, `weight_decay` 0.03), retrained on the same hardware
@@ -60,8 +60,8 @@ A 10-epoch score only ranks settings. To get accuracies that can be compared wit
 Every candidate uses the same seed, data and recipe, so only `max_lr` and `weight_decay` differ. The model with the highest validation accuracy is selected. Every model is then evaluated on the test set for reporting only, never for selection.
 
 ```bash
-python src/training/final_scratch_resnet.py --dry-run   # list the candidates
-python src/training/final_scratch_resnet.py             # train + evaluate each (about 1 h per model on a T4)
+python src/training/tune_scratch_resnet.py --method final --dry-run   # list the candidates
+python src/training/tune_scratch_resnet.py --method final             # train + evaluate each (about 1 h per model on a T4)
 ```
 
 On Kaggle, use `notebooks/kaggle_final_training.ipynb`. Attach the tuning notebook's output as input (**Add Input → Your Work**), then **Save & Run All**. Results are written to `outputs/hyperparameter_tuning/final/` (on Kaggle, `/kaggle/working/hyperparameter_tuning/final/`):
