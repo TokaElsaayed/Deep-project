@@ -15,3 +15,5 @@ outputs/eda/sample_images.png
 # Local transfer-learning backups
 transfer-learning.zip
 transfer-learning-latest.zip
+# Optuna study database (resume state for hyperparameter tuning)
+outputs/hyperparameter_tuning/*.db
