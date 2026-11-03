@@ -1,0 +1,12 @@
+{
+  "model": "scratch_resnet",
+  "checkpoint": "/kaggle/working/Deep-project/outputs/baseline/best.pth",
+  "checkpoint_epoch": 91,
+  "test_images": 5794,
+  "test_accuracy": 0.2262685536762168,
+  "macro_f1": 0.22565068709517402,
+  "mean_confidence": 0.10957323014736176,
+  "gradcam_target_layer": "layers[-1]",
+  "device": "cuda",
+  "note": "Grad-CAM visualizes evidence for the predicted class; it is qualitative, not causal proof."
+}
